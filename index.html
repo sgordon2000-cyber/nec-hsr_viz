@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEC High-Speed Rail — Side by Side</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.20.0/mapbox-gl.css" rel="stylesheet">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="header-eyebrow">Northeast Corridor</div>
+      <h1 class="header-title">Rail at Two Speeds</h1>
+      <p class="header-sub">Acela today vs. the proposed high-speed future — visualized in real time</p>
+      <div class="header-source">
+        Based on <a href="https://nec.transitcosts.com/" target="_blank">Marron Institute's NEC Report</a> by Alon Levy & Devin Wilkins
+      </div>
+    </div>
+    <div class="header-stat-bar">
+      <div class="stat">
+        <span class="stat-label">Current NY→DC</span>
+        <span class="stat-value" id="stat-current-nydc">2h 56m</span>
+      </div>
+      <div class="stat stat--accent">
+        <span class="stat-label">Proposed NY→DC</span>
+        <span class="stat-value" id="stat-proposed-nydc">1h 56m</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Current NY→BOS</span>
+        <span class="stat-value" id="stat-current-nybos">3h 30m</span>
+      </div>
+      <div class="stat stat--accent">
+        <span class="stat-label">Proposed NY→BOS</span>
+        <span class="stat-value" id="stat-proposed-nybos">1h 56m</span>
+      </div>
+      <div class="stat stat--highlight">
+        <span class="stat-label">Infrastructure cost</span>
+        <span class="stat-value">$12.5B</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN RACE VIEW -->
+  <main class="race-section">
+
+    <!-- Controls -->
+    <div class="controls">
+      <button class="btn btn--primary" id="btn-start">▶ Start Race</button>
+      <button class="btn" id="btn-reset">↺ Reset</button>
+      <div class="route-selector">
+        <span class="route-label">Route:</span>
+        <button class="route-btn active" data-route="nydc">New York → DC</button>
+        <button class="route-btn" data-route="nybos">New York → Boston</button>
+        <button class="route-btn" data-route="full">Full Corridor</button>
+      </div>
+      <div class="speed-toggle">
+        <span class="route-label">Simulation:</span>
+        <button class="route-btn active" data-speed="1">1×</button>
+        <button class="route-btn" data-speed="2">2×</button>
+        <button class="route-btn" data-speed="4">4×</button>
+      </div>
+    </div>
+
+    <div class="mapbox-frame">
+      <div class="mapbox-header">
+        <div class="mapbox-title">Actual NEC route vs proposed HSR</div>
+        <div class="mapbox-note">Place your geojson files in <code>data/amtrak-routes.geojson</code> and <code>data/transitcosts-route.geojson</code> to display the real lines.</div>
+      </div>
+      <div id="map" class="mapbox-map"></div>
+      <div class="mapbox-legend">
+        <span class="legend-chip legend-chip--current"></span> Official NEC route
+        <span class="legend-chip legend-chip--proposed"></span> Proposed HSR route
+      </div>
+    </div>
+
+    <!-- Race Track -->
+    <div class="race-wrapper">
+
+      <!-- Left Panel: Current Acela -->
+      <div class="panel panel--current">
+        <div class="panel-header">
+          <div class="panel-badge">TODAY</div>
+          <h2 class="panel-title">Acela</h2>
+          <div class="panel-speed-label">Top speed: <strong>150 mph</strong> · Avg: <strong>68 mph</strong></div>
+        </div>
+
+        <div class="track-container" id="track-current">
+          <!-- SVG Map drawn by JS -->
+          <svg id="map-current" width="100%" viewBox="0 0 280 620" preserveAspectRatio="xMidYMid meet">
+            <!-- Cities + route drawn by JS -->
+          </svg>
+          <!-- Train icon -->
+          <div class="train-marker" id="train-current">
+            <svg viewBox="0 0 36 18" width="36" height="18">
+              <rect x="0" y="2" width="32" height="14" rx="3" fill="#2563EB"/>
+              <polygon points="32,9 36,6 36,12" fill="#2563EB"/>
+              <rect x="3" y="5" width="5" height="4" rx="1" fill="rgba(255,255,255,0.7)"/>
+              <rect x="10" y="5" width="5" height="4" rx="1" fill="rgba(255,255,255,0.7)"/>
+              <rect x="17" y="5" width="5" height="4" rx="1" fill="rgba(255,255,255,0.7)"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="panel-stats">
+          <div class="mini-stat">
+            <span class="mini-label">Elapsed</span>
+            <span class="mini-val mono" id="elapsed-current">0:00</span>
+          </div>
+          <div class="mini-stat">
+            <span class="mini-label">Speed</span>
+            <span class="mini-val mono" id="speed-current">0 mph</span>
+          </div>
+          <div class="mini-stat">
+            <span class="mini-label">At station</span>
+            <span class="mini-val" id="station-current">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center divider / time delta -->
+      <div class="center-divider">
+        <div class="delta-display">
+          <div class="delta-label">Time saved</div>
+          <div class="delta-value" id="delta-value">—</div>
+          <div class="delta-sub" id="delta-sub">with HSR</div>
+        </div>
+        <div class="divider-line"></div>
+      </div>
+
+      <!-- Right Panel: Proposed HSR -->
+      <div class="panel panel--proposed">
+        <div class="panel-header">
+          <div class="panel-badge panel-badge--hsr">PROPOSED</div>
+          <h2 class="panel-title">HSR</h2>
+          <div class="panel-speed-label">Top speed: <strong>220 mph</strong> · Avg: <strong>150 mph</strong></div>
+        </div>
+
+        <div class="track-container" id="track-proposed">
+          <svg id="map-proposed" width="100%" viewBox="0 0 280 620" preserveAspectRatio="xMidYMid meet">
+          </svg>
+          <div class="train-marker" id="train-proposed">
+            <svg viewBox="0 0 40 18" width="40" height="18">
+              <rect x="0" y="2" width="36" height="14" rx="3" fill="#DC2626"/>
+              <polygon points="36,9 40,6 40,12" fill="#DC2626"/>
+              <rect x="3" y="5" width="6" height="4" rx="1" fill="rgba(255,255,255,0.8)"/>
+              <rect x="11" y="5" width="6" height="4" rx="1" fill="rgba(255,255,255,0.8)"/>
+              <rect x="19" y="5" width="6" height="4" rx="1" fill="rgba(255,255,255,0.8)"/>
+              <rect x="27" y="5" width="6" height="4" rx="1" fill="rgba(255,255,255,0.8)"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="panel-stats">
+          <div class="mini-stat">
+            <span class="mini-label">Elapsed</span>
+            <span class="mini-val mono" id="elapsed-proposed">0:00</span>
+          </div>
+          <div class="mini-stat">
+            <span class="mini-label">Speed</span>
+            <span class="mini-val mono" id="speed-proposed">0 mph</span>
+          </div>
+          <div class="mini-stat">
+            <span class="mini-label">At station</span>
+            <span class="mini-val" id="station-proposed">—</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /race-wrapper -->
+
+    <!-- Progress bar -->
+    <div class="progress-section">
+      <div class="progress-track">
+        <div class="progress-fill progress-fill--current" id="progress-current"></div>
+      </div>
+      <div class="progress-labels">
+        <span id="progress-label-start">Washington DC</span>
+        <span id="progress-label-end">New York</span>
+      </div>
+      <div class="progress-track" style="margin-top:6px">
+        <div class="progress-fill progress-fill--proposed" id="progress-proposed"></div>
+      </div>
+    </div>
+
+    <!-- Arrival Banner (hidden until done) -->
+    <div class="arrival-banner" id="arrival-banner" hidden>
+      <div class="arrival-inner">
+        <div class="arrival-icon">🏁</div>
+        <div>
+          <div class="arrival-title" id="arrival-title">HSR arrives!</div>
+          <div class="arrival-sub" id="arrival-sub">The current Acela still has time to go.</div>
+        </div>
+        <div class="arrival-delta" id="arrival-delta"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- INFO SECTION -->
+  <section class="info-section">
+    <div class="info-grid">
+
+      <div class="info-card">
+        <div class="info-card-icon">⚡</div>
+        <h3>What makes it faster?</h3>
+        <p>The Marron Institute proposal calls for <strong>bypasses of slow urban segments</strong>, electrification of commuter lines, and <strong>220 mph capable trainsets</strong>. The key bottleneck today is not top speed — it's slow zones near cities like New Haven and Baltimore where freight traffic forces the Acela to crawl at 30–45 mph.</p>
+      </div>
+
+      <div class="info-card">
+        <div class="info-card-icon">💰</div>
+        <h3>How much does it cost?</h3>
+        <p>The proposal totals <strong>$12.5B in infrastructure</strong> plus $4.5B for new trainsets — a fraction of Amtrak's own $117B 15-year plan. By using European technical standards and separating maintenance from megaprojects, costs are compressed dramatically.</p>
+      </div>
+
+      <div class="info-card">
+        <div class="info-card-icon">🗓️</div>
+        <h3>Frequency improvements</h3>
+        <p>Today's Acela runs roughly every 1–2 hours. The HSR plan enables departures <strong>every 10 minutes near NYC</strong> and every 15 minutes near Boston and DC — turning rail into something closer to a metro, not an airline.</p>
+      </div>
+
+      <div class="info-card">
+        <div class="info-card-icon">🌍</div>
+        <h3>Compared to Europe</h3>
+        <p>London to Paris (281 mi) takes <strong>2h 16m</strong> on Eurostar. New York to DC (225 mi) currently takes 2h 56m on the Acela. With HSR, NY–DC would be <strong>under 2 hours</strong> — finally competitive with European intercity rail.</p>
+      </div>
+
+    </div>
+
+    <div class="corridor-table">
+      <h3>Station-by-station comparison</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Station</th>
+            <th>Acela today</th>
+            <th>Proposed HSR</th>
+            <th>Time saved</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Washington DC</td><td>0:00</td><td>0:00</td><td>—</td></tr>
+          <tr><td>Baltimore</td><td>~0:35</td><td>~0:18</td><td>17 min</td></tr>
+          <tr><td>Philadelphia</td><td>~1:10</td><td>~0:48</td><td>22 min</td></tr>
+          <tr><td>New York Penn</td><td>2:56</td><td>1:56</td><td><strong>60 min</strong></td></tr>
+          <tr><td>New Haven</td><td>~4:00</td><td>~2:36</td><td>~84 min</td></tr>
+          <tr><td>Providence</td><td>~5:00</td><td>~3:20</td><td>~100 min</td></tr>
+          <tr><td>Boston South</td><td>~6:26</td><td>~3:52</td><td><strong>~154 min</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footer-cta">
+      <p>Read the full proposal: <a href="https://nec.transitcosts.com/" target="_blank">nec.transitcosts.com</a> &nbsp;·&nbsp; Report by <strong>Alon Levy & Devin Wilkins</strong>, Marron Institute at NYU</p>
+    </div>
+  </section>
+
+  <script src="route-data.js"></script>
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.20.0/mapbox-gl.js"></script>
+  <script src="mapbox.js"></script>
+  <script src="map-draw.js"></script>
+  <script src="race.js"></script>
+</body>
+</html>
