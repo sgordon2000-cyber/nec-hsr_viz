@@ -1,26 +1,39 @@
-/* === RESET & BASE === */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ============================================================
+   style.css — NEC High-Speed Rail Visualization
 
-:root {
-  --blue:    #003399;
-  --blue-lt: #e8ecff;
-  --blue-dk: #061f6f;
-  --red:     #16a34a;
-  --red-lt:  #dcfce7;
-  --red-dk:  #166534;
-  --gold:    #D97706;
-  --gold-lt: #FFFBEB;
-  --ink:     #0f172a;
-  --ink-2:   #1e293b;
-  --ink-3:   #334155;
-  --muted:   #64748b;
-  --border:  #e2e8f0;
-  --bg:      #f8fafc;
-  --white:   #ffffff;
-  --radius:  10px;
-  --mono: 'DM Mono', monospace;
-  --sans: 'Instrument Sans', sans-serif;
-  --display: 'Syne', sans-serif;
+   TABLE OF CONTENTS:
+   1.  Reset & Base
+   2.  CSS Variables
+   3.  Header
+   4.  Stat Bar
+   5.  Controls (buttons, route selector)
+   6.  Race Section wrapper
+   7.  Main Split layout (map + race panels side by side)
+   8.  Mapbox frame, map, legend
+   9.  Race wrapper grid
+   10. Panels (Acela left / HSR right)
+   11. Track container & SVG
+   12. Train marker
+   13. Panel stats bar
+   14. Center divider & time delta
+   15. Progress bars
+   16. Arrival banner
+   17. Info section & cards
+   18. Station table
+   19. Footer
+   20. Animations
+   21. Responsive / mobile
+   ============================================================ */
+
+
+/* ============================================================
+   1. RESET & BASE
+   Zero out margins/padding, use border-box sizing everywhere
+   ============================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 html { scroll-behavior: smooth; }
@@ -33,7 +46,48 @@ body {
   line-height: 1.6;
 }
 
-/* === HEADER === */
+
+/* ============================================================
+   2. CSS VARIABLES
+   All colors, fonts, and spacing tokens in one place.
+   Note: --red / --red-lt / --red-dk are actually green —
+   they were renamed to match the HSR color but kept as --red
+   for backwards compatibility with existing JS references.
+   ============================================================ */
+:root {
+  /* Brand colors */
+  --blue:    #003399;   /* Current Acela route — dark blue */
+  --blue-lt: #e8ecff;   /* Light blue tint for badges/backgrounds */
+  --blue-dk: #061f6f;   /* Dark blue for text on light backgrounds */
+  --red:     #16a34a;   /* Proposed HSR — green (legacy name --red) */
+  --red-lt:  #dcfce7;   /* Light green tint */
+  --red-dk:  #166534;   /* Dark green for text on light backgrounds */
+  --gold:    #D97706;   /* Time delta highlight, arrival banner */
+  --gold-lt: #FFFBEB;   /* Light gold tint */
+
+  /* Neutral palette */
+  --ink:   #0f172a;     /* Near-black, primary text and dark UI */
+  --ink-2: #1e293b;     /* Slightly lighter, hover states */
+  --ink-3: #334155;     /* Secondary text */
+  --muted: #64748b;     /* De-emphasized labels and captions */
+  --border:#e2e8f0;     /* All dividers and card borders */
+  --bg:    #f8fafc;     /* Page background */
+  --white: #ffffff;     /* Card and panel backgrounds */
+
+  /* Border radius */
+  --radius: 10px;
+
+  /* Typography */
+  --mono:    'DM Mono', monospace;           /* Stats, timestamps, code */
+  --sans:    'Instrument Sans', sans-serif;  /* Body copy */
+  --display: 'Syne', sans-serif;             /* Headings and titles */
+}
+
+
+/* ============================================================
+   3. HEADER
+   Full-width dark banner with title and source attribution
+   ============================================================ */
 .site-header {
   background: var(--ink);
   color: var(--white);
@@ -58,7 +112,7 @@ body {
 
 .header-title {
   font-family: var(--display);
-  font-size: clamp(36px, 6vw, 72px);
+  font-size: clamp(36px, 6vw, 72px); /* Fluid — shrinks gracefully on mobile */
   font-weight: 800;
   line-height: 1.05;
   letter-spacing: -0.03em;
@@ -73,18 +127,16 @@ body {
   margin: 0 auto 20px;
 }
 
-.header-source {
-  font-size: 13px;
-  color: #64748b;
-}
-
-.header-source a {
-  color: var(--gold);
-  text-decoration: none;
-}
-
+.header-source { font-size: 13px; color: #64748b; }
+.header-source a { color: var(--gold); text-decoration: none; }
 .header-source a:hover { text-decoration: underline; }
 
+
+/* ============================================================
+   4. STAT BAR
+   Row of key stats (journey times, cost) below the header title.
+   Sits flush against the header bottom edge.
+   ============================================================ */
 .header-stat-bar {
   display: flex;
   justify-content: center;
@@ -104,13 +156,9 @@ body {
 
 .stat:last-child { border-right: none; }
 
-.stat--accent {
-  background: rgba(220,38,38,0.08);
-}
-
-.stat--highlight {
-  background: rgba(217, 119, 6, 0.1);
-}
+/* Subtle tinted backgrounds for proposed/highlight stats */
+.stat--accent    { background: rgba(220, 38, 38, 0.08); }
+.stat--highlight { background: rgba(217, 119, 6, 0.10); }
 
 .stat-label {
   font-family: var(--mono);
@@ -127,10 +175,15 @@ body {
   color: var(--white);
 }
 
-.stat--accent .stat-value { color: #fca5a5; }
+.stat--accent .stat-value    { color: #fca5a5; }
 .stat--highlight .stat-value { color: var(--gold); }
 
-/* === CONTROLS === */
+
+/* ============================================================
+   5. CONTROLS
+   Toolbar with Start/Reset buttons, route selector pills,
+   and simulation speed toggle.
+   ============================================================ */
 .controls {
   max-width: 1100px;
   margin: 0 auto;
@@ -141,6 +194,7 @@ body {
   flex-wrap: wrap;
 }
 
+/* Base button */
 .btn {
   font-family: var(--sans);
   font-size: 14px;
@@ -154,23 +208,27 @@ body {
   transition: all 0.15s;
 }
 
-.btn:hover { background: var(--bg); border-color: var(--ink-3); }
+.btn:hover  { background: var(--bg); border-color: var(--ink-3); }
 .btn:active { transform: scale(0.97); }
 
+/* Primary (Start Race / Pause / Resume) — dark fill */
 .btn--primary {
   background: var(--ink);
   color: var(--white);
   border-color: var(--ink);
 }
 
+.btn--primary:hover { background: var(--ink-2); }
+
+/* Fixed width so the button doesn't jump when label changes
+   between "Start Race", "Pause", "Resume", "Race Again" */
 #btn-start {
-  min-width: 120px;
+  min-width: 130px;
   text-align: center;
 }
 
-.btn--primary:hover { background: var(--ink-2); }
-
-.route-selector, .speed-toggle {
+.route-selector,
+.speed-toggle {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -185,6 +243,7 @@ body {
   letter-spacing: 0.08em;
 }
 
+/* Pill-style toggle buttons for route and speed */
 .route-btn {
   font-family: var(--sans);
   font-size: 13px;
@@ -206,20 +265,51 @@ body {
   border-color: var(--ink);
 }
 
-/* === RACE SECTION === */
+
+/* ============================================================
+   6. RACE SECTION WRAPPER
+   Constrains max-width and adds horizontal padding for the
+   main content area below the controls toolbar.
+   ============================================================ */
 .race-section {
   max-width: 1100px;
   margin: 0 auto;
   padding: 24px 24px 0;
 }
 
+
+/* ============================================================
+   7. MAIN SPLIT LAYOUT
+   Two-column grid: Mapbox map (left) + race panels (right).
+   1fr : 1.4fr gives the race panels slightly more space so
+   both the Acela and HSR columns fit without clipping.
+
+   IMPORTANT: Do NOT use position:sticky on .mapbox-frame.
+   Sticky would cause the map to float over the progress bars
+   when the user scrolls down past the race panels.
+   ============================================================ */
+.main-split {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 16px;
+  align-items: start; /* top-align both columns independently */
+}
+
+
+/* ============================================================
+   8. MAPBOX FRAME, MAP DIV & LEGEND
+   White card wrapping the Mapbox GL map.
+
+   KEY RULE: .mapbox-map must have an explicit pixel height.
+   Mapbox GL renders into a canvas — if the container has
+   height: 0 or height: auto, the map appears blank.
+   ============================================================ */
 .mapbox-frame {
-  max-width: 1100px;
-  margin: 0 auto 24px;
   background: var(--white);
   border: 1.5px solid var(--border);
   border-radius: 16px;
   overflow: hidden;
+  position: static; /* NOT sticky — see note in section 7 */
 }
 
 .mapbox-header {
@@ -239,67 +329,84 @@ body {
   color: var(--ink);
 }
 
-.mapbox-note {
-  font-size: 13px;
-  color: var(--muted);
-}
-
+/* The Mapbox GL canvas container.
+   Height MUST be a fixed pixel value — do not use % or auto. */
 .mapbox-map {
   width: 100%;
-  height: 420px;
-  overscroll-behavior: contain;
-  touch-action: pan-x pan-y;
+  height: 500px;
+  overscroll-behavior: contain; /* Stops page scrolling while panning map */
+  touch-action: pan-x pan-y;   /* Enables touch pan on mobile */
 }
 
+/* Legend row beneath the map */
 .mapbox-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 18px;
+  gap: 12px;
   align-items: center;
-  padding: 14px 24px 18px;
-  color: var(--ink-3);
+  padding: 12px 16px;
   font-size: 13px;
+  color: var(--ink-3);
 }
 
-.legend-chip {
-  display: inline-flex;
+/* Each legend entry: [line swatch] [dot] [label text] */
+.legend-row {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 999px;
-  margin-right: 8px;
-  border: 1px solid rgba(0,0,0,0.1);
-  color: #fff;
-  font-size: 11px;
-  line-height: 1;
+  gap: 6px;
 }
 
-.legend-chip--current { background: var(--blue); }
-.legend-chip--proposed { background: #16a34a; }
+/* Short horizontal bar showing the route line color */
+.legend-line {
+  display: inline-block;
+  width: 24px;
+  height: 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
 
+/* Small circle matching the animated train dot color */
+.legend-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1.5px #94a3b8;
+  flex-shrink: 0;
+}
+
+
+/* ============================================================
+   9. RACE WRAPPER GRID
+   Three columns: [Acela panel] [60px center divider] [HSR panel]
+   The center column is intentionally narrow — just wide enough
+   for the stacked time-saved label and value.
+   ============================================================ */
 .race-wrapper {
   display: grid;
-  grid-template-columns: 1fr 80px 1fr;
+  grid-template-columns: 1fr 60px 1fr;
   gap: 0;
   background: var(--white);
   border: 1.5px solid var(--border);
   border-radius: 16px;
   overflow: hidden;
-  margin-top: 16px;
 }
 
-/* === PANELS === */
-.panel {
-  display: flex;
-  flex-direction: column;
-}
+
+/* ============================================================
+   10. PANELS (Acela / HSR)
+   Each panel is a flex column: header → track area → stats row.
+   The track area uses flex:1 to fill available vertical space.
+   ============================================================ */
+.panel { display: flex; flex-direction: column; }
 
 .panel-header {
   padding: 20px 20px 16px;
   border-bottom: 1.5px solid var(--border);
 }
 
+/* "TODAY" / "PROPOSED" pill badge */
 .panel-badge {
   display: inline-block;
   font-family: var(--mono);
@@ -326,15 +433,18 @@ body {
   margin-bottom: 4px;
 }
 
-.panel--current .panel-title { color: var(--blue); }
+.panel--current .panel-title  { color: var(--blue); }
 .panel--proposed .panel-title { color: var(--red); }
 
-.panel-speed-label {
-  font-size: 12px;
-  color: var(--muted);
-}
+.panel-speed-label { font-size: 12px; color: var(--muted); }
 
-/* Track / map area */
+
+/* ============================================================
+   11. TRACK CONTAINER & SVG
+   Relative-positioned container so the train-marker can be
+   absolutely positioned inside it. flex:1 makes it grow to
+   fill the panel's remaining height.
+   ============================================================ */
 .track-container {
   position: relative;
   flex: 1;
@@ -343,33 +453,48 @@ body {
   background: var(--bg);
 }
 
-.panel--current .track-container { border-right: 1px dashed var(--border); }
-
-/* SVG fills the container */
-#map-current, #map-proposed {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+/* Dashed separator between Acela track and center divider */
+.panel--current .track-container {
+  border-right: 1px dashed var(--border);
 }
 
-/* Train marker */
+/* map-draw.js fills these SVGs with the route visualization */
+#map-current,
+#map-proposed {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+}
+
+
+/* ============================================================
+   12. TRAIN MARKER
+   Absolutely positioned SVG train icon.
+   race.js sets `style.top` as a percentage to animate it
+   from 5% (Boston/NY start) down to 90%+ (DC/Boston end).
+   The .animating class enables the CSS transition.
+   ============================================================ */
 .train-marker {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  top: 90%;
-  transition: none;
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.25));
+  top: 5%;            /* Start near top of track */
+  transition: none;   /* No transition when static */
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
   z-index: 10;
 }
 
+/* Smooth movement — added by race.js when race starts */
 .train-marker.animating {
   transition: top 0.05s linear;
 }
 
-/* Panel bottom stats */
+
+/* ============================================================
+   13. PANEL STATS BAR
+   Three stats at the bottom of each panel:
+   [Elapsed time] [Current speed] [Current station]
+   ============================================================ */
 .panel-stats {
   display: flex;
   gap: 0;
@@ -378,7 +503,7 @@ body {
 
 .mini-stat {
   flex: 1;
-  padding: 12px 14px;
+  padding: 8px 10px;
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -389,7 +514,7 @@ body {
 
 .mini-label {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--muted);
@@ -403,10 +528,17 @@ body {
 
 .mini-val.mono {
   font-family: var(--mono);
-  font-size: 14px;
+  font-size: 13px;
 }
 
-/* === CENTER DIVIDER === */
+
+/* ============================================================
+   14. CENTER DIVIDER & TIME DELTA
+   Narrow column between the two race panels.
+   Shows the live "time saved by HSR" counter.
+   .delta-display uses sticky so the number stays visible
+   even when the user has scrolled halfway down the panels.
+   ============================================================ */
 .center-divider {
   display: flex;
   flex-direction: column;
@@ -441,7 +573,7 @@ body {
   font-weight: 700;
   color: var(--gold);
   line-height: 1;
-  min-height: 28px;
+  min-height: 28px; /* Prevents layout shift when value first appears */
 }
 
 .delta-sub {
@@ -450,6 +582,7 @@ body {
   margin-top: 2px;
 }
 
+/* Decorative vertical line filling the rest of the divider height */
 .divider-line {
   flex: 1;
   width: 1px;
@@ -457,7 +590,14 @@ body {
   margin-top: 8px;
 }
 
-/* === PROGRESS === */
+
+/* ============================================================
+   15. PROGRESS BARS
+   Two thin horizontal bars below the race panels.
+   They sit OUTSIDE .main-split so they span the full
+   content width, visually connecting map and panels.
+   Blue = Acela, Green = HSR.
+   ============================================================ */
 .progress-section {
   margin-top: 16px;
   padding: 0 2px;
@@ -472,12 +612,12 @@ body {
 
 .progress-fill {
   height: 100%;
-  width: 0%;
+  width: 0%;          /* race.js updates this each frame */
   border-radius: 99px;
   transition: width 0.1s linear;
 }
 
-.progress-fill--current { background: var(--blue); }
+.progress-fill--current  { background: var(--blue); }
 .progress-fill--proposed { background: var(--red); }
 
 .progress-labels {
@@ -489,7 +629,13 @@ body {
   margin: 4px 0 6px;
 }
 
-/* === ARRIVAL BANNER === */
+
+/* ============================================================
+   16. ARRIVAL BANNER
+   Slides up when the HSR train reaches its destination.
+   Hidden via the HTML `hidden` attribute until race.js
+   calls showArrivalBanner().
+   ============================================================ */
 .arrival-banner {
   margin-top: 16px;
   background: var(--ink);
@@ -510,7 +656,7 @@ body {
   gap: 16px;
 }
 
-.arrival-icon { font-size: 28px; }
+.arrival-icon  { font-size: 28px; }
 
 .arrival-title {
   font-family: var(--display);
@@ -518,11 +664,9 @@ body {
   font-weight: 700;
 }
 
-.arrival-sub {
-  font-size: 14px;
-  color: #94a3b8;
-}
+.arrival-sub   { font-size: 14px; color: #94a3b8; }
 
+/* Large time-saved number pinned to the right */
 .arrival-delta {
   margin-left: auto;
   font-family: var(--display);
@@ -531,7 +675,11 @@ body {
   color: var(--gold);
 }
 
-/* === INFO SECTION === */
+
+/* ============================================================
+   17. INFO SECTION & CARDS
+   Four explainer cards in a responsive auto-fit grid
+   ============================================================ */
 .info-section {
   max-width: 1100px;
   margin: 0 auto;
@@ -552,10 +700,7 @@ body {
   padding: 24px;
 }
 
-.info-card-icon {
-  font-size: 28px;
-  margin-bottom: 12px;
-}
+.info-card-icon { font-size: 28px; margin-bottom: 12px; }
 
 .info-card h3 {
   font-family: var(--display);
@@ -565,15 +710,14 @@ body {
   letter-spacing: -0.01em;
 }
 
-.info-card p {
-  font-size: 14px;
-  color: var(--muted);
-  line-height: 1.65;
-}
-
+.info-card p { font-size: 14px; color: var(--muted); line-height: 1.65; }
 .info-card p strong { color: var(--ink); }
 
-/* === TABLE === */
+
+/* ============================================================
+   18. STATION TABLE
+   Station-by-station comparison of Acela vs HSR times
+   ============================================================ */
 .corridor-table {
   background: var(--white);
   border: 1.5px solid var(--border);
@@ -589,11 +733,7 @@ body {
   margin-bottom: 16px;
 }
 
-.corridor-table table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-}
+.corridor-table table { width: 100%; border-collapse: collapse; font-size: 14px; }
 
 .corridor-table th {
   font-family: var(--mono);
@@ -613,45 +753,57 @@ body {
 }
 
 .corridor-table tr:last-child td { border-bottom: none; }
+.corridor-table tr:hover td      { background: var(--bg); }
 
+/* Color-code the time columns */
 .corridor-table td:nth-child(2) { color: var(--blue); font-family: var(--mono); font-size: 13px; }
-.corridor-table td:nth-child(3) { color: var(--red); font-family: var(--mono); font-size: 13px; }
+.corridor-table td:nth-child(3) { color: var(--red);  font-family: var(--mono); font-size: 13px; }
 .corridor-table td:nth-child(4) { color: var(--gold); font-weight: 600; }
 
-.corridor-table tr:hover td { background: var(--bg); }
 
-/* === FOOTER CTA === */
-.footer-cta {
-  text-align: center;
-  font-size: 14px;
-  color: var(--muted);
-}
-
-.footer-cta a {
-  color: var(--ink);
-  font-weight: 600;
-  text-decoration: none;
-}
-
+/* ============================================================
+   19. FOOTER
+   ============================================================ */
+.footer-cta { text-align: center; font-size: 14px; color: var(--muted); }
+.footer-cta a { color: var(--ink); font-weight: 600; text-decoration: none; }
 .footer-cta a:hover { text-decoration: underline; }
 
-/* === ANIMATIONS === */
+
+/* ============================================================
+   20. ANIMATIONS
+   trainPulse: subtle glow on the HSR train while moving
+   slideIn: arrival banner entrance (defined in section 16)
+   ============================================================ */
 @keyframes trainPulse {
-  0%, 100% { filter: drop-shadow(0 2px 6px rgba(0,0,0,0.25)); }
-  50% { filter: drop-shadow(0 2px 12px rgba(22,163,74,0.35)); }
+  0%,  100% { filter: drop-shadow(0 2px  6px rgba(0,   0,   0,   0.25)); }
+  50%       { filter: drop-shadow(0 2px 12px rgba(22, 163,  74,  0.35)); }
 }
 
 .panel--proposed .train-marker.animating {
   animation: trainPulse 1s ease-in-out infinite;
 }
 
-/* Responsive */
+
+/* ============================================================
+   21. RESPONSIVE / MOBILE
+   900px: stack map above race panels (single column)
+   700px: stack Acela and HSR panels vertically
+   ============================================================ */
+@media (max-width: 900px) {
+  /* Single column — map stacks above race panels */
+  .main-split {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 700px) {
+  /* Stack Acela and HSR panels vertically */
   .race-wrapper {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto auto;
   }
 
+  /* Center divider becomes a horizontal bar between panels */
   .center-divider {
     flex-direction: row;
     border: none;
@@ -660,18 +812,12 @@ body {
     padding: 12px 20px;
   }
 
-  .divider-line { display: none; }
-
-  .delta-display {
-    position: static;
-    text-align: left;
-  }
+  .divider-line  { display: none; }
+  .delta-display { position: static; text-align: left; }
 
   .track-container { min-height: 260px; }
 
-  .header-stat-bar {
-    flex-direction: column;
-  }
-
+  /* Stat bar stacks vertically in header */
+  .header-stat-bar { flex-direction: column; }
   .stat { border-right: none; border-bottom: 1px solid #1e293b; }
 }

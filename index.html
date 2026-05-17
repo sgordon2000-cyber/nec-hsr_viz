@@ -67,17 +67,30 @@
       </div>
     </div>
 
-    <div class="mapbox-frame">
-      <div class="mapbox-header">
-        <div class="mapbox-title">Actual NEC route vs proposed HSR</div>
+    <div class="main-split">
+  <div class="mapbox-frame">
+    <div class="mapbox-header">
+      <div class="mapbox-title">Actual NEC route vs proposed HSR</div>
+    </div>
+    <div id="map" class="mapbox-map"></div>
+    <div class="mapbox-legend">
+      <div class="legend-row">
+        <span class="legend-line" style="background:#003399"></span>
+        <span class="legend-dot" style="background:#003399"></span>
+        <span>Current Acela</span>
       </div>
-      <div id="map" class="mapbox-map"></div>
-      <div class="mapbox-legend">
-        <span class="legend-chip legend-chip--current"></span> Official NEC route
-        <span class="legend-chip legend-chip--proposed">↓</span> Proposed HSR route
-        <span class="legend-chip" style="background:#F59E0B;width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:6px;"></span> Proposed bypass (click for details)
+      <div class="legend-row">
+        <span class="legend-line" style="background:#16a34a"></span>
+        <span class="legend-dot" style="background:#16a34a"></span>
+        <span>Proposed HSR</span>
+      </div>
+      <div class="legend-row">
+        <span class="legend-dot" style="background:#F59E0B"></span>
+        <span>Proposed bypass <em>(click for details)</em></span>
       </div>
     </div>
+  </div><!-- /mapbox-frame -->
+
 
     <!-- Race Track -->
     <div class="race-wrapper">
