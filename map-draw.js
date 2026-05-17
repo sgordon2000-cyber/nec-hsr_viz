@@ -61,7 +61,7 @@ function drawSingleMap(svgId, route, type) {
 
   // Track line (railroad style — dashed center)
   // Outer track lines
-  const trackColor = type === 'current' ? '#93c5fd' : '#fca5a5';
+  const trackColor = type === 'current' ? '#93c5fd' : '#bbf7d0';
   svg.appendChild(mk('line', {
     x1: trackX - 6, y1: trackTop, x2: trackX - 6, y2: trackTop + trackH,
     stroke: trackColor, 'stroke-width': 2, opacity: 0.6
@@ -84,7 +84,7 @@ function drawSingleMap(svgId, route, type) {
   // Center line
   svg.appendChild(mk('line', {
     x1: trackX, y1: trackTop, x2: trackX, y2: trackTop + trackH,
-    stroke: type === 'current' ? '#3b82f6' : '#ef4444',
+    stroke: type === 'current' ? '#003399' : '#16a34a',
     'stroke-width': 1.5,
     'stroke-dasharray': '6 4',
     opacity: 0.4
@@ -101,7 +101,7 @@ function drawSingleMap(svgId, route, type) {
     const dot = mk('circle', {
       cx: trackX, cy: y, r: 6,
       fill: '#fff',
-      stroke: type === 'current' ? '#2563EB' : '#DC2626',
+      stroke: type === 'current' ? '#003399' : '#16a34a',
       'stroke-width': 2
     });
     dot.setAttribute('data-station', station.name);
@@ -150,14 +150,14 @@ function drawSingleMap(svgId, route, type) {
   // Start (top)
   const startBg = mk('rect', {
     x: trackX - 60, y: 4, width: 120, height: 22, rx: 4,
-    fill: type === 'current' ? '#EFF6FF' : '#FEF2F2'
+    fill: type === 'current' ? '#e8ecff' : '#dcfce7'
   });
   svg.appendChild(startBg);
   const startLabel = mk('text', {
     x: trackX, y: 19,
     'font-size': '11', 'font-weight': '700',
     'font-family': "'Syne', sans-serif",
-    fill: type === 'current' ? '#1d4ed8' : '#b91c1c',
+    fill: type === 'current' ? '#003399' : '#166534',
     'text-anchor': 'middle'
   });
   startLabel.textContent = startStation.name;
@@ -166,14 +166,14 @@ function drawSingleMap(svgId, route, type) {
   // End (bottom)
   const endBg = mk('rect', {
     x: trackX - 64, y: H - 26, width: 128, height: 22, rx: 4,
-    fill: type === 'current' ? '#EFF6FF' : '#FEF2F2'
+    fill: type === 'current' ? '#e8ecff' : '#dcfce7'
   });
   svg.appendChild(endBg);
   const endLabel = mk('text', {
     x: trackX, y: H - 11,
     'font-size': '11', 'font-weight': '700',
     'font-family': "'Syne', sans-serif",
-    fill: type === 'current' ? '#1d4ed8' : '#b91c1c',
+    fill: type === 'current' ? '#003399' : '#166534',
     'text-anchor': 'middle'
   });
   endLabel.textContent = endStation.name;
@@ -189,12 +189,12 @@ function speedColor(mph, type) {
     if (mph < 50)  return '#bfdbfe'; // very slow
     if (mph < 80)  return '#93c5fd';
     if (mph < 120) return '#60a5fa';
-    return '#3b82f6';
+    return '#003399';
   } else {
-    if (mph < 80)  return '#fecaca';
-    if (mph < 150) return '#f87171';
-    if (mph < 200) return '#ef4444';
-    return '#dc2626';
+    if (mph < 80)  return '#dcfce7';
+    if (mph < 150) return '#86efac';
+    if (mph < 200) return '#4ade80';
+    return '#16a34a';
   }
 }
 
@@ -202,8 +202,8 @@ function drawSpeedLegend(svg, ns, mk, W, H, type) {
   // small velocity indicator strip in corner
   const lx = W - 12, ly = H - 80, lh = 60, lw = 6;
   const stops = type === 'current'
-    ? ['#bfdbfe', '#60a5fa', '#2563EB']
-    : ['#fecaca', '#ef4444', '#DC2626'];
+    ? ['#bfdbfe', '#60a5fa', '#003399']
+    : ['#dcfce7', '#86efac', '#16a34a'];
 
   const grad = document.createElementNS(ns, 'linearGradient');
   const gid = `lg-${type}-${Math.random().toString(36).slice(2,6)}`;

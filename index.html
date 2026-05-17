@@ -61,8 +61,8 @@
       </div>
       <div class="speed-toggle">
         <span class="route-label">Simulation:</span>
-        <button class="route-btn active" data-speed="1">1×</button>
-        <button class="route-btn" data-speed="2">2×</button>
+        <button class="route-btn" data-speed="1">1×</button>
+        <button class="route-btn active" data-speed="2">2×</button>
         <button class="route-btn" data-speed="4">4×</button>
       </div>
     </div>
@@ -74,7 +74,7 @@
       <div id="map" class="mapbox-map"></div>
       <div class="mapbox-legend">
         <span class="legend-chip legend-chip--current"></span> Official NEC route
-        <span class="legend-chip legend-chip--proposed"></span> Proposed HSR route
+        <span class="legend-chip legend-chip--proposed">↓</span> Proposed HSR route
         <span class="legend-chip" style="background:#F59E0B;width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:6px;"></span> Proposed bypass (click for details)
       </div>
     </div>
@@ -98,8 +98,8 @@
           <!-- Train icon -->
           <div class="train-marker" id="train-current">
             <svg viewBox="0 0 36 18" width="36" height="18">
-              <rect x="0" y="2" width="32" height="14" rx="3" fill="#2563EB"/>
-              <polygon points="32,9 36,6 36,12" fill="#2563EB"/>
+              <rect x="0" y="2" width="32" height="14" rx="3" fill="#003399"/>
+              <polygon points="32,9 36,6 36,12" fill="#003399"/>
               <rect x="3" y="5" width="5" height="4" rx="1" fill="rgba(255,255,255,0.7)"/>
               <rect x="10" y="5" width="5" height="4" rx="1" fill="rgba(255,255,255,0.7)"/>
               <rect x="17" y="5" width="5" height="4" rx="1" fill="rgba(255,255,255,0.7)"/>
@@ -146,8 +146,8 @@
           </svg>
           <div class="train-marker" id="train-proposed">
             <svg viewBox="0 0 40 18" width="40" height="18">
-              <rect x="0" y="2" width="36" height="14" rx="3" fill="#DC2626"/>
-              <polygon points="36,9 40,6 40,12" fill="#DC2626"/>
+              <rect x="0" y="2" width="36" height="14" rx="3" fill="#16a34a"/>
+              <polygon points="36,9 40,6 40,12" fill="#16a34a"/>
               <rect x="3" y="5" width="6" height="4" rx="1" fill="rgba(255,255,255,0.8)"/>
               <rect x="11" y="5" width="6" height="4" rx="1" fill="rgba(255,255,255,0.8)"/>
               <rect x="19" y="5" width="6" height="4" rx="1" fill="rgba(255,255,255,0.8)"/>
@@ -207,25 +207,25 @@
     <div class="info-grid">
 
       <div class="info-card">
-        <div class="info-card-icon">⚡</div>
+        <div class="info-card-icon"></div>
         <h3>What makes it faster?</h3>
         <p>The Marron Institute proposal calls for <strong>bypasses of slow urban segments</strong>, electrification of commuter lines, and <strong>220 mph capable trainsets</strong>. The key bottleneck today is not top speed — it's slow zones near cities like New Haven and Baltimore where freight traffic forces the Acela to crawl at 30–45 mph.</p>
       </div>
 
       <div class="info-card">
-        <div class="info-card-icon">💰</div>
+        <div class="info-card-icon"></div>
         <h3>How much does it cost?</h3>
         <p>The proposal totals <strong>$12.5B in infrastructure</strong> plus $4.5B for new trainsets — a fraction of Amtrak's own $117B 15-year plan. By using European technical standards and separating maintenance from megaprojects, costs are compressed dramatically.</p>
       </div>
 
       <div class="info-card">
-        <div class="info-card-icon">🗓️</div>
+        <div class="info-card-icon"></div>
         <h3>Frequency improvements</h3>
         <p>Today's Acela runs roughly every 1–2 hours. The HSR plan enables departures <strong>every 10 minutes near NYC</strong> and every 15 minutes near Boston and DC — turning rail into something closer to a metro, not an airline.</p>
       </div>
 
       <div class="info-card">
-        <div class="info-card-icon">🌍</div>
+        <div class="info-card-icon"></div>
         <h3>Compared to Europe</h3>
         <p>London to Paris (281 mi) takes <strong>2h 16m</strong> on Eurostar. New York to DC (225 mi) currently takes 2h 56m on the Acela. With HSR, NY–DC would be <strong>under 2 hours</strong> — finally competitive with European intercity rail.</p>
       </div>

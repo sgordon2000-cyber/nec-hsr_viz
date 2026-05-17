@@ -23,11 +23,21 @@ window.initMapbox = function() {
 
   mapboxgl.accessToken = MAPBOX_TOKEN;
 
+  const fullBounds = BOUNDS.full;
+  const boundsPadding = 0.2;
+  const maxBounds = [
+    [fullBounds[0][0] - boundsPadding, fullBounds[0][1] - boundsPadding],
+    [fullBounds[1][0] + boundsPadding, fullBounds[1][1] + boundsPadding],
+  ];
+
   const map = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/light-v11',
     center: [-75.5, 39.9],
     zoom: 6,
+    minZoom: 5,
+    maxZoom: 12,
+    maxBounds: maxBounds,
     attributionControl: false,
   });
 
@@ -66,19 +76,19 @@ window.initMapbox = function() {
       type: 'line',
       source: 'nec-src',
       paint: {
-        'line-color': '#2563EB',
+        'line-color': '#003399',
         'line-width': 3.5,
         'line-opacity': 0.85,
       },
     }, before);
 
-    // HSR proposed — solid red, slightly thinner so both are visible
+    // HSR proposed — solid green, slightly thinner so both are visible
     map.addLayer({
       id: 'hsr-line',
       type: 'line',
       source: 'hsr-src',
       paint: {
-        'line-color': '#DC2626',
+        'line-color': '#16a34a',
         'line-width': 2.5,
         'line-opacity': 0.9,
         'line-dasharray': [6, 0], // solid
@@ -109,7 +119,7 @@ window.initMapbox = function() {
       source: 'current-train',
       paint: {
         'circle-radius': 9,
-        'circle-color': '#2563EB',
+        'circle-color': '#003399',
         'circle-stroke-width': 2.5,
         'circle-stroke-color': '#fff',
       },
@@ -121,7 +131,7 @@ window.initMapbox = function() {
       source: 'proposed-train',
       paint: {
         'circle-radius': 9,
-        'circle-color': '#DC2626',
+        'circle-color': '#16a34a',
         'circle-stroke-width': 2.5,
         'circle-stroke-color': '#fff',
       },
@@ -163,13 +173,14 @@ function addBypassMarkers(map) {
     const el = document.createElement('div');
     el.title = b.label;
     el.style.cssText = `
-      width: 20px; height: 20px;
+      width: 12px; height: 12px;
       background: #F59E0B;
-      border: 2px solid #fff;
+      border: 1.5px solid #fff;
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 700; color: white;
-      cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      font-size: 8px; font-weight: 700; color: white;
+      line-height: 1;
+      cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     `;
     el.textContent = '✦';
     new mapboxgl.Marker({ element: el })

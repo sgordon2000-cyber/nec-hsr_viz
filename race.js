@@ -3,7 +3,7 @@
 (function() {
   // State
   let currentRoute = 'full';
-  let simSpeed = 1;       // multiplier (1x, 2x, 4x)
+  let simSpeed = 2;       // multiplier (1x, 2x, 4x)
   let isRunning = false;
   let rafId = null;
 
@@ -45,7 +45,6 @@
     // Route buttons
     document.querySelectorAll('.route-btn[data-route]').forEach(btn => {
       btn.addEventListener('click', () => {
-        if (isRunning) return;
         document.querySelectorAll('.route-btn[data-route]').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentRoute = btn.dataset.route;

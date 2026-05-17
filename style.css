@@ -2,12 +2,12 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --blue:    #2563EB;
-  --blue-lt: #EFF6FF;
-  --blue-dk: #1e3a8a;
-  --red:     #DC2626;
-  --red-lt:  #FEF2F2;
-  --red-dk:  #7f1d1d;
+  --blue:    #003399;
+  --blue-lt: #e8ecff;
+  --blue-dk: #061f6f;
+  --red:     #16a34a;
+  --red-lt:  #dcfce7;
+  --red-dk:  #166534;
   --gold:    #D97706;
   --gold-lt: #FFFBEB;
   --ink:     #0f172a;
@@ -163,6 +163,11 @@ body {
   border-color: var(--ink);
 }
 
+#btn-start {
+  min-width: 120px;
+  text-align: center;
+}
+
 .btn--primary:hover { background: var(--ink-2); }
 
 .route-selector, .speed-toggle {
@@ -242,6 +247,8 @@ body {
 .mapbox-map {
   width: 100%;
   height: 420px;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
 }
 
 .mapbox-legend {
@@ -255,16 +262,21 @@ body {
 }
 
 .legend-chip {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
   border-radius: 999px;
   margin-right: 8px;
   border: 1px solid rgba(0,0,0,0.1);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
 }
 
-.legend-chip--current { background: #2563EB; }
-.legend-chip--proposed { background: #DC2626; }
+.legend-chip--current { background: var(--blue); }
+.legend-chip--proposed { background: #16a34a; }
 
 .race-wrapper {
   display: grid;
@@ -626,7 +638,7 @@ body {
 /* === ANIMATIONS === */
 @keyframes trainPulse {
   0%, 100% { filter: drop-shadow(0 2px 6px rgba(0,0,0,0.25)); }
-  50% { filter: drop-shadow(0 2px 12px rgba(220,38,38,0.5)); }
+  50% { filter: drop-shadow(0 2px 12px rgba(22,163,74,0.35)); }
 }
 
 .panel--proposed .train-marker.animating {
