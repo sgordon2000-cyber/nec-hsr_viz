@@ -1,290 +1,263 @@
-// mapbox.js — loads real route geojson and animates markers on the map
+// mapbox.js — NEC current vs proposed HSR with real bypass geometry
 
 const MAPBOX_TOKEN = 'pk.eyJ1Ijoic2dvcmRvbjIwMDAiLCJhIjoiY21veW12ZW52MDgzcjJzbXowcWwzNzc0ZiJ9.888GrTBMQEBvEZSXiPM07w';
-const AMTRAK_GEOJSON = 'data/amtrak-routes.geojson';
-const TRANSITCOSTS_GEOJSON = 'data/transitcosts-route.geojson';
+
+const BOUNDS = {
+  nydc:  [[-77.3, 38.6], [-73.7, 41.0]],
+  nybos: [[-74.3, 40.5], [-70.8, 42.6]],
+  full:  [[-77.3, 38.6], [-70.8, 42.6]],
+};
 
 window.mapboxState = {
   map: null,
+  routeKey: 'full',
+  routeReady: false,
   currentCoords: null,
   proposedCoords: null,
-  currentDistance: 0,
-  proposedDistance: 0,
+  _popups: [],
 };
 
 window.initMapbox = function() {
-  if (!window.mapboxgl) {
-    console.warn('Mapbox GL JS is not loaded.');
-    return;
-  }
+  if (!window.mapboxgl)    { console.warn('Mapbox GL not loaded');    return; }
+  if (!window.NEC_COORDS)  { console.warn('route-coords.js not loaded'); return; }
 
   mapboxgl.accessToken = MAPBOX_TOKEN;
 
   const map = new mapboxgl.Map({
     container: 'map',
-    style: 'mapbox://styles/mapbox/light-v12',
-    center: [-75.1652, 39.9526],
-    zoom: 5.5,
+    style: 'mapbox://styles/mapbox/light-v11',
+    center: [-75.5, 39.9],
+    zoom: 6,
     attributionControl: false,
   });
 
   window.mapboxState.map = map;
-  map.addControl(new mapboxgl.NavigationControl({visualizePitch: false}), 'top-right');
+  map.addControl(new mapboxgl.NavigationControl({ visualizePitch: false }), 'top-right');
 
   map.on('load', () => {
-    Promise.all([loadJson(AMTRAK_GEOJSON), loadJson(TRANSITCOSTS_GEOJSON)])
-      .then(([amtrakData, transitData]) => {
-        setupRouteMap(map, amtrakData, transitData);
-      })
-      .catch((err) => {
-        console.error('Mapbox route load failed:', err);
-        showMapError(map, err);
+    // Always show the full corridor on the map
+    const nec = routeCoords('full', window.NEC_COORDS);
+    const hsr = routeCoords('full', window.HSR_COORDS);
+
+    // Insert below first label layer
+    const labelLayer = map.getStyle().layers.find(
+      l => l.type === 'symbol' && l.layout?.['text-field']
+    );
+    const before = labelLayer?.id;
+
+    // ── Sources ───────────────────────────────────────────────────────────────
+    map.addSource('nec-src',      { type: 'geojson', data: lineFeature(nec) });
+    map.addSource('hsr-src',      { type: 'geojson', data: lineFeature(hsr) });
+    map.addSource('current-train',{ type: 'geojson', data: pointFeature(nec[0]) });
+    map.addSource('proposed-train',{ type: 'geojson', data: pointFeature(hsr[0]) });
+
+    // Bypass highlight sources
+    if (window.HSR_BYPASSES) {
+      window.HSR_BYPASSES.forEach((b, i) => {
+        map.addSource(`bypass-${i}`, { type: 'geojson', data: lineFeature(b.coords) });
       });
+    }
+
+    // ── Layers ────────────────────────────────────────────────────────────────
+
+    // NEC current — solid blue
+    map.addLayer({
+      id: 'nec-line',
+      type: 'line',
+      source: 'nec-src',
+      paint: {
+        'line-color': '#2563EB',
+        'line-width': 3.5,
+        'line-opacity': 0.85,
+      },
+    }, before);
+
+    // HSR proposed — solid red, slightly thinner so both are visible
+    map.addLayer({
+      id: 'hsr-line',
+      type: 'line',
+      source: 'hsr-src',
+      paint: {
+        'line-color': '#DC2626',
+        'line-width': 2.5,
+        'line-opacity': 0.9,
+        'line-dasharray': [6, 0], // solid
+      },
+    }, before);
+
+    // Bypass highlight — bright orange, thicker, on top
+    if (window.HSR_BYPASSES) {
+      window.HSR_BYPASSES.forEach((b, i) => {
+        map.addLayer({
+          id: `bypass-line-${i}`,
+          type: 'line',
+          source: `bypass-${i}`,
+          paint: {
+            'line-color': '#F59E0B',
+            'line-width': 4,
+            'line-opacity': 1,
+            'line-dasharray': [1, 0],
+          },
+        });
+      });
+    }
+
+    // Train dots — above everything
+    map.addLayer({
+      id: 'current-train-point',
+      type: 'circle',
+      source: 'current-train',
+      paint: {
+        'circle-radius': 9,
+        'circle-color': '#2563EB',
+        'circle-stroke-width': 2.5,
+        'circle-stroke-color': '#fff',
+      },
+    });
+
+    map.addLayer({
+      id: 'proposed-train-point',
+      type: 'circle',
+      source: 'proposed-train',
+      paint: {
+        'circle-radius': 9,
+        'circle-color': '#DC2626',
+        'circle-stroke-width': 2.5,
+        'circle-stroke-color': '#fff',
+      },
+    });
+
+    // ── Bypass popups on click ────────────────────────────────────────────────
+    if (window.HSR_BYPASSES) {
+      window.HSR_BYPASSES.forEach((b, i) => {
+        map.on('click', `bypass-line-${i}`, (e) => {
+          new mapboxgl.Popup({ closeButton: true, maxWidth: '260px' })
+            .setLngLat(e.lngLat)
+            .setHTML(`
+              <div style="font-family:'Instrument Sans',sans-serif;padding:4px">
+                <div style="font-weight:700;font-size:13px;color:#92400e;margin-bottom:4px">
+                  🚄 ${b.label}
+                </div>
+                <div style="font-size:12px;color:#44403c;line-height:1.5">${b.description}</div>
+              </div>`)
+            .addTo(map);
+        });
+        map.on('mouseenter', `bypass-line-${i}`, () => map.getCanvas().style.cursor = 'pointer');
+        map.on('mouseleave', `bypass-line-${i}`, () => map.getCanvas().style.cursor = '');
+      });
+    }
+
+    window.mapboxState.currentCoords  = routeCoords('full', window.NEC_COORDS);
+    window.mapboxState.proposedCoords = routeCoords('full', window.HSR_COORDS);
+    window.mapboxState.routeReady = true;
+
+    fitRoute(map, 'full');
+    window.updateMapMarkers(0, 0);
+    addBypassMarkers(map);
   });
 };
 
-function loadJson(url) {
-  return fetch(url).then((res) => {
-    if (!res.ok) throw new Error(`Failed to load ${url}: ${res.status}`);
-    return res.json();
+function addBypassMarkers(map) {
+  if (!window.HSR_BYPASSES) return;
+  window.HSR_BYPASSES.forEach(b => {
+    const el = document.createElement('div');
+    el.title = b.label;
+    el.style.cssText = `
+      width: 20px; height: 20px;
+      background: #F59E0B;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: white;
+      cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    `;
+    el.textContent = '✦';
+    new mapboxgl.Marker({ element: el })
+      .setLngLat(b.midpoint)
+      .setPopup(new mapboxgl.Popup({ offset: 14, maxWidth: '260px' }).setHTML(`
+        <div style="font-family:'Instrument Sans',sans-serif;padding:4px">
+          <div style="font-weight:700;font-size:13px;color:#92400e;margin-bottom:4px">✦ ${b.label}</div>
+          <div style="font-size:12px;color:#44403c;line-height:1.5">${b.description}</div>
+        </div>`))
+      .addTo(map);
   });
 }
 
-function setupRouteMap(map, amtrakData, transitData) {
-  const amtrakLine = pickLongestLine(amtrakData);
-  const transitLine = pickLongestLine(transitData);
+window.setMapRoute = function(routeKey) {
+  const { map, routeReady } = window.mapboxState;
+  if (!map || !routeReady) return;
 
-  if (!amtrakLine || !transitLine) {
-    throw new Error('No valid LineString found in one of the geojson files.');
-  }
+  // Lines always show the full corridor — only train dots change
+  const nec = routeCoords(routeKey, window.NEC_COORDS);
+  const hsr = routeCoords(routeKey, window.HSR_COORDS);
 
-  window.mapboxState.currentCoords = amtrakLine.coordinates;
-  window.mapboxState.proposedCoords = transitLine.coordinates;
-  window.mapboxState.currentDistance = totalLineDistance(amtrakLine.coordinates);
-  window.mapboxState.proposedDistance = totalLineDistance(transitLine.coordinates);
+  window.mapboxState.routeKey       = routeKey;
+  window.mapboxState.currentCoords  = nec;
+  window.mapboxState.proposedCoords = hsr;
 
-  map.addSource('amtrak-route', { type: 'geojson', data: toGeoJsonFeature(amtrakLine.coordinates) });
-  map.addSource('proposed-route', { type: 'geojson', data: toGeoJsonFeature(transitLine.coordinates) });
-  map.addSource('current-train', { type: 'geojson', data: buildPointGeoJson(amtrakLine.coordinates[0]) });
-  map.addSource('proposed-train', { type: 'geojson', data: buildPointGeoJson(transitLine.coordinates[0]) });
-
-  map.addLayer({
-    id: 'amtrak-route-line',
-    type: 'line',
-    source: 'amtrak-route',
-    paint: {
-      'line-color': '#2563EB',
-      'line-width': 4,
-      'line-opacity': 0.8,
-    },
-  });
-
-  map.addLayer({
-    id: 'proposed-route-line',
-    type: 'line',
-    source: 'proposed-route',
-    paint: {
-      'line-color': '#DC2626',
-      'line-width': 4,
-      'line-opacity': 0.8,
-      'line-dasharray': [2, 2],
-    },
-  });
-
-  map.addLayer({
-    id: 'current-train-point',
-    type: 'circle',
-    source: 'current-train',
-    paint: {
-      'circle-radius': 7,
-      'circle-color': '#2563EB',
-      'circle-stroke-width': 2,
-      'circle-stroke-color': '#fff',
-    },
-  });
-
-  map.addLayer({
-    id: 'proposed-train-point',
-    type: 'circle',
-    source: 'proposed-train',
-    paint: {
-      'circle-radius': 7,
-      'circle-color': '#DC2626',
-      'circle-stroke-width': 2,
-      'circle-stroke-color': '#fff',
-    },
-  });
-
-  const bounds = new mapboxgl.LngLatBounds();
-  [...amtrakLine.coordinates, ...transitLine.coordinates].forEach((coord) => bounds.extend(coord));
-  map.fitBounds(bounds, { padding: 40, maxZoom: 7, duration: 0 });
-
+  // Don't update line sources — they always show full corridor
+  fitRoute(map, routeKey);
   window.updateMapMarkers(0, 0);
+};
+
+function fitRoute(map, routeKey) {
+  const [[w, s], [e, n]] = BOUNDS[routeKey];
+  map.fitBounds([[w, s], [e, n]], { padding: 60, duration: 700 });
 }
 
-function pickLongestLine(data) {
-  if (!data) return null;
-
-  if (data.type === 'FeatureCollection') {
-    let best = null;
-    let bestLen = -1;
-    data.features.forEach((feature) => {
-      const coords = getLineCoords(feature.geometry);
-      if (coords && coords.length > 1) {
-        const len = totalLineDistance(coords);
-        if (len > bestLen) {
-          bestLen = len;
-          best = coords;
-        }
-      }
-    });
-    return best ? { type: 'LineString', coordinates: best } : null;
-  }
-
-  if (data.type === 'Feature') {
-    const coords = getLineCoords(data.geometry);
-    return coords && coords.length > 1 ? { type: 'LineString', coordinates: coords } : null;
-  }
-
-  if (data.type === 'LineString') {
-    return data;
-  }
-
-  if (data.type === 'MultiLineString') {
-    let best = null;
-    let bestLen = -1;
-    data.coordinates.forEach((coords) => {
-      const len = totalLineDistance(coords);
-      if (len > bestLen) {
-        bestLen = len;
-        best = coords;
-      }
-    });
-    return best ? { type: 'LineString', coordinates: best } : null;
-  }
-
-  return null;
+function routeCoords(routeKey, coordsMap) {
+  const coords = coordsMap[routeKey] || coordsMap.nydc;
+  return routeKey === 'full' ? [...coords].reverse() : coords;
 }
 
-function getLineCoords(geometry) {
-  if (!geometry) return null;
-  if (geometry.type === 'LineString') return geometry.coordinates;
-  if (geometry.type === 'MultiLineString') {
-    let best = null;
-    let bestLen = -1;
-    geometry.coordinates.forEach((coords) => {
-      const len = totalLineDistance(coords);
-      if (len > bestLen) {
-        bestLen = len;
-        best = coords;
-      }
-    });
-    return best;
-  }
-  return null;
-}
+// ── Geometry ──────────────────────────────────────────────────────────────────
 
-function toGeoJsonFeature(coords) {
-  return {
-    type: 'Feature',
-    geometry: {
-      type: 'LineString',
-      coordinates: coords,
-    },
-    properties: {},
-  };
-}
-
-function buildPointGeoJson(coord) {
-  return {
-    type: 'Feature',
-    geometry: {
-      type: 'Point',
-      coordinates: coord,
-    },
-    properties: {},
-  };
-}
-
-function totalLineDistance(coords) {
-  let total = 0;
-  for (let i = 1; i < coords.length; i++) {
-    total += distanceBetween(coords[i - 1], coords[i]);
-  }
-  return total;
-}
-
-function distanceBetween(a, b) {
-  const R = 6371000; // meters
-  const rad = Math.PI / 180;
-  const lat1 = a[1] * rad;
-  const lat2 = b[1] * rad;
-  const dLat = (b[1] - a[1]) * rad;
-  const dLng = (b[0] - a[0]) * rad;
-  const sinLat = Math.sin(dLat / 2);
-  const sinLng = Math.sin(dLng / 2);
-  const h = sinLat * sinLat + Math.cos(lat1) * Math.cos(lat2) * sinLng * sinLng;
-  return 2 * R * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
-}
-
-function pointAlongLine(coords, fraction) {
-  if (!coords || coords.length === 0) return null;
-  fraction = Math.max(0, Math.min(1, fraction));
-
-  const total = totalLineDistance(coords);
-  const target = fraction * total;
+function pointAlong(coords, frac) {
+  frac = Math.max(0, Math.min(1, frac));
+  const total = totalDist(coords);
+  const target = frac * total;
   let traveled = 0;
-
   for (let i = 1; i < coords.length; i++) {
-    const start = coords[i - 1];
-    const end = coords[i];
-    const segLen = distanceBetween(start, end);
-    if (traveled + segLen >= target) {
-      const segmentFraction = (target - traveled) / segLen;
+    const seg = segDist(coords[i-1], coords[i]);
+    if (traveled + seg >= target) {
+      const t = (target - traveled) / seg;
       return [
-        start[0] + (end[0] - start[0]) * segmentFraction,
-        start[1] + (end[1] - start[1]) * segmentFraction,
+        coords[i-1][0] + (coords[i][0] - coords[i-1][0]) * t,
+        coords[i-1][1] + (coords[i][1] - coords[i-1][1]) * t,
       ];
     }
-    traveled += segLen;
+    traveled += seg;
   }
-
   return coords[coords.length - 1];
 }
 
-function showMapError(map, error) {
-  const fallback = document.createElement('div');
-  fallback.style.position = 'absolute';
-  fallback.style.top = '0';
-  fallback.style.left = '0';
-  fallback.style.width = '100%';
-  fallback.style.height = '100%';
-  fallback.style.background = 'rgba(255,255,255,0.92)';
-  fallback.style.display = 'flex';
-  fallback.style.alignItems = 'center';
-  fallback.style.justifyContent = 'center';
-  fallback.style.textAlign = 'center';
-  fallback.style.padding = '24px';
-  fallback.style.color = '#111827';
-  fallback.innerHTML = `<div><strong>Unable to load Mapbox geojson routes.</strong><br>${error.message}</div>`;
-  map.getContainer().appendChild(fallback);
+function totalDist(pts) {
+  let t = 0;
+  for (let i = 1; i < pts.length; i++) t += segDist(pts[i-1], pts[i]);
+  return t;
 }
 
+function segDist(a, b) {
+  const R = 6371000, r = Math.PI / 180;
+  const h = Math.sin(((b[1]-a[1])*r)/2)**2
+          + Math.cos(a[1]*r) * Math.cos(b[1]*r) * Math.sin(((b[0]-a[0])*r)/2)**2;
+  return 2 * R * Math.atan2(Math.sqrt(h), Math.sqrt(1-h));
+}
+
+function lineFeature(coords) {
+  return { type:'Feature', geometry:{ type:'LineString', coordinates:coords }, properties:{} };
+}
+function pointFeature(coord) {
+  return { type:'Feature', geometry:{ type:'Point', coordinates:coord }, properties:{} };
+}
+
+// ── Public API ────────────────────────────────────────────────────────────────
+
 window.updateMapMarkers = function(currentProgress, proposedProgress) {
-  const state = window.mapboxState;
-  if (!state.map || !state.currentCoords || !state.proposedCoords) return;
-
-  const currentCoord = pointAlongLine(state.currentCoords, currentProgress);
-  const proposedCoord = pointAlongLine(state.proposedCoords, proposedProgress);
-
-  if (currentCoord) {
-    const source = state.map.getSource('current-train');
-    if (source) source.setData(buildPointGeoJson(currentCoord));
-  }
-  if (proposedCoord) {
-    const source = state.map.getSource('proposed-train');
-    if (source) source.setData(buildPointGeoJson(proposedCoord));
-  }
+  const { map, currentCoords, proposedCoords, routeReady } = window.mapboxState;
+  if (!map || !routeReady || !currentCoords) return;
+  map.getSource('current-train')?.setData(pointFeature(pointAlong(currentCoords, currentProgress)));
+  map.getSource('proposed-train')?.setData(pointFeature(pointAlong(proposedCoords, proposedProgress)));
 };
 
 window.addEventListener('DOMContentLoaded', initMapbox);

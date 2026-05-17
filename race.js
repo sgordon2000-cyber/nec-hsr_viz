@@ -2,7 +2,7 @@
 
 (function() {
   // State
-  let currentRoute = 'nydc';
+  let currentRoute = 'full';
   let simSpeed = 1;       // multiplier (1x, 2x, 4x)
   let isRunning = false;
   let rafId = null;
@@ -51,6 +51,7 @@
         currentRoute = btn.dataset.route;
         reset();
         applyRoute(currentRoute);
+        window.setMapRoute && window.setMapRoute(currentRoute);
       });
     });
 

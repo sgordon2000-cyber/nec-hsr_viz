@@ -1,74 +1,101 @@
 # NEC High-Speed Rail Visualizer
 
-An interactive side-by-side animation showing the difference between **today's Acela** and the **proposed high-speed rail** on the Northeast Corridor — based on the [Marron Institute's NEC Report](https://nec.transitcosts.com/) by Alon Levy & Devin Wilkins.
+An interactive visualization comparing **today's Acela service** with the **proposed high-speed rail** on the Northeast Corridor.
 
-## 🚄 Live Demo
+This project shows:
+- a Mapbox base map with the full NEC corridor drawn in blue,
+- overlaid proposed HSR geometry in red,
+- animated train markers along route-specific segments,
+- a side-by-side track race animation for current vs proposed service,
+- three route options: `nydc`, `nybos`, and `full`.
 
-> Deploy to GitHub Pages and paste link here
+## 🚄 What’s included
 
-## Features
+- `index.html` — UI, controls, map container, and buttons
+- `style.css` — layout, panel styles, buttons, and responsive rules
+- `route-data.js` — route definitions, station timing, and speed profiles
+- `route-coords.js` — full route coordinate arrays used by Mapbox markers
+- `mapbox.js` — Mapbox setup, route rendering, train dot animation,
+  and route switching logic
+- `map-draw.js` — SVG track diagram rendering for the two panels
+- `race.js` — animation engine, progress bars, elapsed time, and station labels
 
-- **Real-time race animation** — watch both trains travel simultaneously
-- **Three routes**: New York↔DC, New York↔Boston, Full Corridor
-- **Speed visualization** — color-coded speed zones on each track
-- **Live stats** — elapsed time, current speed, station name for each train
-- **Arrival banner** — shows how far ahead HSR arrives
-- **1×/2×/4× simulation speeds**
-- **Station-by-station table** with time savings
+## Key behavior
 
-## Data Sources
+- The app now defaults to the **Full Corridor** route.
+- The full route map is displayed **southbound**, from Boston South Station to Washington DC.
+- The Mapbox route lines remain the full corridor, while train dots move according
+  to the currently selected route.
+- Route selection updates both the SVG race view and the map markers.
 
-All timing data is based on the Marron Institute report:
-- Current Acela: NY–DC 2h 56m, NY–Boston 3h 30m
-- Proposed HSR: NY–DC 1h 56m, NY–Boston 1h 56m
-- Infrastructure cost: $12.5B (vs. Amtrak's $117B 15-year plan)
+## Usage
 
-## Deploy to GitHub Pages
+1. Open `index.html` in a browser.
+2. Select a route using the route buttons.
+3. Click **Start Race** to animate both services.
+4. Use `1×`, `2×`, or `4×` to change simulation speed.
 
-1. Fork or clone this repository
-2. Go to **Settings → Pages**
-3. Under Source, select **Deploy from a branch**
-4. Choose `main` branch, `/ (root)` folder
-5. Click Save — your site will be live at `https://yourusername.github.io/nec-hsr/`
+## Development notes
 
-## Local Development
+### Route data
 
-No build step needed — pure HTML, CSS, and vanilla JS.
+- `route-data.js` defines the route metadata in `window.ROUTES`.
+- Each route entry contains:
+  - `label`, `startLabel`, `endLabel`
+  - `currentMinutes` / `proposedMinutes`
+  - `stations[]` with `name`, `pos`, `currentMin`, and `proposedMin`
+  - `currentSpeeds[]` / `proposedSpeeds[]` for interpolated speed display
+
+### Mapbox geometry
+
+- `route-coords.js` provides the coordinate arrays used by `mapbox.js`.
+- The map shows the full corridor geometry as a static line.
+- `mapbox.js` updates the animated train point positions based on the selected route.
+
+### SVG track panels
+
+- `map-draw.js` draws the two vertical route diagrams for current and proposed trains.
+- It uses the `pos` values from `window.ROUTES` to place stations and speed bands.
+
+### Cleaned-up files
+
+The project no longer uses legacy OSM/GeoJSON data files (`data/nec-osm.json`, `data/nec-osm-raw.json`, `data/amtrak-routes.geojson`, `transitcosts-route.geojson`).
+
+## Customization
+
+### Change route timing
+
+Edit `route-data.js` and update the route object values:
+- `currentMinutes`
+- `proposedMinutes`
+- `stations[].pos`
+- `stations[].currentMin`
+- `stations[].proposedMin`
+- `currentSpeeds[]`
+- `proposedSpeeds[]`
+
+### Add a new route
+
+1. Add a new route object to `window.ROUTES` in `route-data.js`.
+2. Add a route button in `index.html` with `data-route="<new-key>"`.
+3. Add a corresponding bounds entry in `mapbox.js` if you want map auto-fit behavior.
+
+## Running locally
+
+No build tooling is required.
 
 ```bash
-git clone https://github.com/yourusername/nec-hsr
-cd nec-hsr
-# Open index.html in your browser, or use any static server:
+git clone https://github.com/yourusername/nec-hsr_viz.git
+cd nec-hsr_viz
+# open index.html directly or use a local server
 npx serve .
 ```
 
-## Project Structure
+## Notes
 
-```
-nec-hsr/
-├── index.html          # Main page
-├── css/
-│   └── style.css       # All styles
-├── js/
-│   ├── route-data.js   # Station timing & speed profiles
-│   ├── map-draw.js     # SVG map generation
-│   └── race.js         # Animation engine
-└── README.md
-```
-
-## Customizing
-
-**To adjust timing data**, edit `js/route-data.js`. Each route has:
-- `currentMinutes` / `proposedMinutes` — total journey time
-- `stations[]` — stops with position (0–1) and time at each
-- `currentSpeeds[]` / `proposedSpeeds[]` — speed profile along the route
-
-**To add a new route**, add an entry to `window.ROUTES` and a button in `index.html`.
-
-## Credits
-
-- Report: *How to Build High-Speed Rail on the Northeast Corridor* — Alon Levy & Devin Wilkins, Marron Institute at NYU
-- Interactive site: [nec.transitcosts.com](https://nec.transitcosts.com/)
+- This is a pure client-side project using vanilla JavaScript and Mapbox GL JS.
+- The live map uses `mapbox://styles/mapbox/light-v11` and requires a Mapbox access token in `mapbox.js`.
+- The UI is designed as a visualization and not a production transit planning tool.
 
 ## License
 

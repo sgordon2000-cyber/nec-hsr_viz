@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-  <link href="https://api.mapbox.com/mapbox-gl-js/v2.20.0/mapbox-gl.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/dist/mapbox-gl.css">
 </head>
 <body>
 
@@ -55,9 +55,9 @@
       <button class="btn" id="btn-reset">↺ Reset</button>
       <div class="route-selector">
         <span class="route-label">Route:</span>
-        <button class="route-btn active" data-route="nydc">New York → DC</button>
+        <button class="route-btn" data-route="nydc">New York → DC</button>
         <button class="route-btn" data-route="nybos">New York → Boston</button>
-        <button class="route-btn" data-route="full">Full Corridor</button>
+        <button class="route-btn active" data-route="full">Full Corridor</button>
       </div>
       <div class="speed-toggle">
         <span class="route-label">Simulation:</span>
@@ -70,12 +70,12 @@
     <div class="mapbox-frame">
       <div class="mapbox-header">
         <div class="mapbox-title">Actual NEC route vs proposed HSR</div>
-        <div class="mapbox-note">Place your geojson files in <code>data/amtrak-routes.geojson</code> and <code>data/transitcosts-route.geojson</code> to display the real lines.</div>
       </div>
       <div id="map" class="mapbox-map"></div>
       <div class="mapbox-legend">
         <span class="legend-chip legend-chip--current"></span> Official NEC route
         <span class="legend-chip legend-chip--proposed"></span> Proposed HSR route
+        <span class="legend-chip" style="background:#F59E0B;width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:6px;"></span> Proposed bypass (click for details)
       </div>
     </div>
 
@@ -261,7 +261,8 @@
   </section>
 
   <script src="route-data.js"></script>
-  <script src="https://api.mapbox.com/mapbox-gl-js/v2.20.0/mapbox-gl.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/dist/mapbox-gl.js"></script>
+  <script src="route-coords.js"></script>
   <script src="mapbox.js"></script>
   <script src="map-draw.js"></script>
   <script src="race.js"></script>
